@@ -1,7 +1,68 @@
-import { User, Order, Course, Coupon, Progress } from '../models/index.js'
+import { User, Order, Course, Coupon, Progress, Chapter } from '../models/index.js'
 import { generateToken } from '../config/jwt.js'
 import { getWechatOpenid } from '../utils/wechat.js'
 import { Op } from 'sequelize'
+import crypto from 'crypto'
+
+export const register = async (req, res) => {
+  try {
+    const { username, password } = req.body
+
+    if (!username || !password) {
+      return res.status(400).json({
+        code: 400,
+        message: '用户名和密码不能为空',
+        data: null
+      })
+    }
+
+    const existingUser = await User.findOne({ where: { nickname: username } })
+
+    if (existingUser) {
+      return res.status(400).json({
+        code: 400,
+        message: '用户名已存在',
+        data: null
+      })
+    }
+
+    const openid = crypto.randomBytes(32).toString('hex')
+
+    const user = await User.create({
+      openid,
+      nickname: username,
+      avatar: 'https://picsum.photos/100/100?random=' + Date.now(),
+      member_level: 0
+    })
+
+    const token = generateToken({
+      id: user.id,
+      openid: user.openid
+    })
+
+    res.json({
+      code: 200,
+      message: '注册成功',
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nickname: user.nickname,
+          avatar: user.avatar,
+          phone: user.phone,
+          member_level: user.member_level
+        }
+      }
+    })
+  } catch (error) {
+    console.error('注册失败:', error)
+    res.status(500).json({
+      code: 500,
+      message: error.message || '注册失败',
+      data: null
+    })
+  }
+}
 
 export const wxLogin = async (req, res) => {
   try {

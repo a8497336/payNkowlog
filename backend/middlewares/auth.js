@@ -23,3 +23,16 @@ export const authMiddleware = (req, res, next) => {
   req.user = decoded
   next()
 }
+
+export const optionalAuthMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '')
+
+  if (token) {
+    const decoded = verifyToken(token)
+    if (decoded) {
+      req.user = decoded
+    }
+  }
+
+  next()
+}

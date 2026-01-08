@@ -15,6 +15,11 @@ const usernameLoginSchema = Joi.object({
   password: Joi.string().required()
 })
 
+const registerSchema = Joi.object({
+  username: Joi.string().min(3).max(20).required(),
+  password: Joi.string().min(6).required()
+})
+
 const updateProfileSchema = Joi.object({
   nickname: Joi.string().max(50).optional(),
   avatar: Joi.string().uri().optional(),
@@ -24,6 +29,8 @@ const updateProfileSchema = Joi.object({
 router.post('/wxlogin', validate(wxLoginSchema), userController.wxLogin)
 
 router.post('/login', validate(usernameLoginSchema), userController.usernameLogin)
+
+router.post('/register', validate(registerSchema), userController.register)
 
 router.get('/profile', authMiddleware, userController.getUserProfile)
 

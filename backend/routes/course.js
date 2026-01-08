@@ -17,7 +17,15 @@ const courseListSchema = Joi.object({
   size: Joi.number().integer().min(1).max(100).optional()
 })
 
+const searchSchema = Joi.object({
+  keyword: Joi.string().min(1).required(),
+  page: Joi.number().integer().min(1).optional(),
+  size: Joi.number().integer().min(1).max(100).optional()
+})
+
 router.get('/', validateQuery(courseListSchema), courseController.getCourseList)
+
+router.get('/search', validateQuery(searchSchema), courseController.searchCourses)
 
 router.get('/:id', validateParams(courseIdSchema), courseController.getCourseDetail)
 

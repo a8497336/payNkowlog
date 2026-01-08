@@ -15,16 +15,28 @@ const routes = [
     meta: { title: '登录' }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: { title: '注册' }
+  },
+  {
     path: '/course/:id',
     name: 'CourseDetail',
     component: () => import('@/views/CourseDetail.vue'),
     meta: { title: '课程详情' }
   },
   {
+    path: '/search',
+    name: 'Search',
+    component: () => import('@/views/Search.vue'),
+    meta: { title: '搜索' }
+  },
+  {
     path: '/play/:courseId/:chapterId',
     name: 'VideoPlay',
     component: () => import('@/views/VideoPlay.vue'),
-    meta: { title: '视频播放', requiresAuth: true }
+    meta: { title: '视频播放', requiresAuthForFull: true }
   },
   {
     path: '/profile',

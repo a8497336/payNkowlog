@@ -135,12 +135,20 @@ const checkAccess = async () => {
 }
 
 const playChapter = async (chapter) => {
-  if (!userStore.isLogin) {
-    router.push('/')
+  if (chapter.is_try) {
+    router.push(`/play/${courseId.value}/${chapter.id}`)
     return
   }
 
-  if (!chapter.is_try && !isPurchased.value) {
+  if (!userStore.isLogin) {
+    router.push({
+      path: '/login',
+      query: { redirect: `/course/${courseId.value}` }
+    })
+    return
+  }
+
+  if (!isPurchased.value) {
     showPayPopup.value = true
     return
   }

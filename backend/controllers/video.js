@@ -3,18 +3,22 @@ import { getVideoPlayAuth } from '../utils/aliyun.js'
 
 export const getSignUrl = async (req, res) => {
   try {
-    const { video_id } = req.body
-    const userId = req.user.id
+    const { chapter_id, video_id } = req.body
+    const userId = req.user?.id
     
-    if (!video_id) {
+    let chapter
+    
+    if (chapter_id) {
+      chapter = await Chapter.findByPk(chapter_id)
+    } else if (video_id) {
+      chapter = await Chapter.findOne({ where: { video_id } })
+    } else {
       return res.status(400).json({
         code: 400,
-        message: '缺少视频ID',
+        message: '缺少章节ID或视频ID',
         data: null
       })
     }
-    
-    const chapter = await Chapter.findOne({ where: { video_id } })
     
     if (!chapter) {
       return res.status(404).json({
@@ -24,9 +28,32 @@ export const getSignUrl = async (req, res) => {
       })
     }
     
+    if (chapter.is_try) {
+      const playAuth = await getVideoPlayAuth(chapter.video_id)
+      
+      res.json({
+        code: 200,
+        message: 'success',
+        data: {
+          url: playAuth,
+          is_try: chapter.is_try,
+          try_duration: chapter.try_duration
+        }
+      })
+      return
+    }
+    
+    if (!userId) {
+      return res.status(401).json({
+        code: 401,
+        message: '请先登录',
+        data: null
+      })
+    }
+    
     const hasAccess = await checkCourseAccess(userId, chapter.course_id)
     
-    if (!hasAccess && !chapter.is_try) {
+    if (!hasAccess) {
       return res.status(403).json({
         code: 403,
         message: '请先购买课程',
@@ -34,7 +61,7 @@ export const getSignUrl = async (req, res) => {
       })
     }
     
-    const playAuth = await getVideoPlayAuth(video_id)
+    const playAuth = await getVideoPlayAuth(chapter.video_id)
     
     res.json({
       code: 200,

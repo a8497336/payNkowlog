@@ -34,9 +34,11 @@
     <van-popup v-model:show="showTryViewLock" :close-on-click-overlay="false">
       <div class="try-view-lock">
         <van-icon name="lock" size="48" color="#ff6b6b" />
-        <h3>试看结束</h3>
-        <p>购买课程后即可观看完整内容</p>
-        <van-button type="primary" block @click="handlePurchase">立即购买</van-button>
+        <h3>{{ lockReason || '试看结束' }}</h3>
+        <p>{{ lockReason ? lockReason : '购买课程后即可观看完整内容' }}</p>
+        <van-button type="primary" block @click="handlePurchase">
+          {{ lockReason === '请先登录' ? '去登录' : (userStore.isLogin ? '立即购买' : '去登录') }}
+        </van-button>
       </div>
     </van-popup>
   </div>
@@ -67,6 +69,7 @@ const chapterList = ref([])
 const currentChapterId = ref(null)
 const currentChapterTitle = ref('')
 const showTryViewLock = ref(false)
+const lockReason = ref('')
 const tryViewTimer = ref(null)
 const progressSaveTimer = ref(null)
 
@@ -79,7 +82,7 @@ const tryViewDuration = computed(() => playStore.tryViewDuration)
 const initPlayer = async () => {
   try {
     const res = await getSignUrl({
-      video_id: chapterId.value
+      chapter_id: chapterId.value
     })
     const videoUrl = res.data.url
     
@@ -131,6 +134,16 @@ const initPlayer = async () => {
     playStore.setVideoUrl(videoUrl)
   } catch (error) {
     console.error('初始化播放器失败:', error)
+    
+    if (error.response?.status === 401) {
+      lockReason.value = '请先登录'
+      showTryViewLock.value = true
+    } else if (error.response?.status === 403) {
+      lockReason.value = '请先购买课程'
+      showTryViewLock.value = true
+    } else {
+      router.push(`/course/${courseId.value}`)
+    }
   }
 }
 
@@ -153,6 +166,10 @@ const handleVideoEnded = () => {
 }
 
 const saveVideoProgress = async () => {
+  if (!userStore.isLogin) {
+    return
+  }
+  
   try {
     await saveProgress({
       course_id: courseId.value,
@@ -167,6 +184,16 @@ const saveVideoProgress = async () => {
 const switchChapter = async (chapter) => {
   if (chapter.id === currentChapterId.value) return
   
+  if (!chapter.is_try && !userStore.isLogin) {
+    router.push({
+      path: '/login',
+      query: { redirect: `/course/${courseId.value}` }
+    })
+    return
+  }
+  
+  lockReason.value = ''
+  showTryViewLock.value = false
   currentChapterId.value = chapter.id
   currentChapterTitle.value = chapter.title
   playStore.setCurrentChapter(chapter.id)
@@ -180,7 +207,23 @@ const switchChapter = async (chapter) => {
 
 const handlePurchase = () => {
   showTryViewLock.value = false
-  router.push(`/course/${courseId.value}`)
+  
+  if (lockReason.value === '请先登录') {
+    router.push({
+      path: '/login',
+      query: { redirect: `/course/${courseId.value}` }
+    })
+    return
+  }
+  
+  if (!userStore.isLogin) {
+    router.push({
+      path: '/login',
+      query: { redirect: `/course/${courseId.value}` }
+    })
+  } else {
+    router.push(`/course/${courseId.value}`)
+  }
 }
 
 const loadChapterList = async () => {

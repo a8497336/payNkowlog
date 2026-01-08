@@ -28,3 +28,11 @@ export function getCourseChapters(courseId) {
     method: 'get'
   })
 }
+
+export function searchCourses(params) {
+  return request({
+    url: '/courses/search',
+    method: 'get',
+    params
+  })
+}
